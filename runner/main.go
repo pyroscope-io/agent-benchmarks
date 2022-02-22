@@ -1,29 +1,26 @@
 /*
-   It uses a name of a benchmark to run.
-   The name of the benchmark is actually a directory which contains a Dockerfile.
-   The Dockerfile must contain instructions to build and image of the benchmark to run.
-   The benchmark will be a program that will accept the following environment option:
-   PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING
-   When the envvar is set, the benchmarked program should enable profiling.
-   When the envvar is not set, the benchmarked program should disable profiling.
+   Runner for the the benchmark suite.
+   It takes a sequence of paths to the actual benchmarks to run.
 
-   The runner will do the following:
-   - Build the ingestor image.
-   - Build the benchmarked image.
-   - Create a network.
-   - Create the ingestor container.
-   - Run the ingestor container.
-   - Create a benchmarked container.
-   - Run the benchmarked container with profiling enabled
-   - When the benchmarked container finishes, destroy the benchmarked container
-   - Drop the network.
-   - Create a benchmarked container.
-   - Run the benchmarked container with profiling enabled.
-   - When the benchmarked container finishes, destroy the benchmarked container.
-   - Create a benchmarked container.
-   - Run the benchmarked container with profiling disabled.
-   - When the benchmarked container finishes, destroy the benchmarked container.
-   - Give the results of the three runs and compare them.
+   Each benchmark is just a directory with a Dockerfile that speficies
+   how to build the image of the program to benchmark.
+
+   The program to benchmark should handle the PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING
+   environment variable:
+   - when the envvar is set, the benchmarked program should enable profiling.
+   - when the envvar is not set, the benchmarked program should not enable profiling.
+
+   The runner currently executes three different versions of the benchmarked program:
+   - A program with profiling not enabled. This is the baseline.
+   - A program with profiling enabled with an ingestor available.
+   - A program with profiling enabled with an ingestor unavailable.
+   It will measure the time it takes to run all of them and compare the last two with the baseline.
+   The benchmarked programs are run several times to have more samples and generate more reliable results.
+
+   The runner takes care of the whole setup and teardown of each benchmark, including:
+   - Building the docker images and containres for the ingestor and benchmarked program.
+   - Creating a network and connecting/disconnecting the ingestor and benchmarked program.
+   - Removing the containers, images and network when no longer needed.
 */
 package main
 
