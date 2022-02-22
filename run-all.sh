@@ -1,4 +1,4 @@
 #!/bin/bash
-pushd runner
+pushd runner > /dev/null
 go run . ../fibonacci-go-cpu-push/ ../fibonacci-go-mem-push/
-popd
+popd > /dev/null

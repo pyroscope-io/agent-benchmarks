@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -34,7 +37,26 @@ func (r *runner) buildImage(ctx context.Context, path, tag string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := r.cli.ImageBuild(ctx, tar, types.ImageBuildOptions{Tags: []string{tag}}); err != nil {
+	res, err := r.cli.ImageBuild(ctx, tar, types.ImageBuildOptions{Tags: []string{tag}})
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	rd := bufio.NewReader(res.Body)
+	var line string
+	for {
+		var err error
+		l, err := rd.ReadString('\n')
+		if err == nil {
+			line = l
+			continue
+		}
+		if err == io.EOF {
+			if !strings.Contains(line, "Successfully") {
+				return fmt.Errorf("unexpected last message when building image: %s", line)
+			}
+			break
+		}
 		return err
 	}
 	return nil
@@ -136,10 +158,33 @@ func (r *runner) startIngestor(ctx context.Context) error {
 	return nil
 }
 
-func (r *runner) startBenchmarked(ctx context.Context) error {
+func (r *runner) runBenchmarked(ctx context.Context) error {
 	if err := r.cli.ContainerStart(ctx, r.benchmarkedID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
+	statusCh, errCh := r.cli.ContainerWait(ctx, r.benchmarkedID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("wait failed: %w", err)
+		}
+	case wait := <-statusCh:
+		if wait.Error != nil {
+			return fmt.Errorf("wait failed: %s", wait.Error.Message)
+		}
+		if wait.StatusCode != 0 {
+			out, err := r.cli.ContainerLogs(ctx, r.benchmarkedID, types.ContainerLogsOptions{ShowStdout: true})
+			if err != nil {
+				return fmt.Errorf("unable to get benchmarked container logs: %w", err)
+			}
+			defer out.Close()
+			b, err := io.ReadAll(out)
+			if err != nil {
+				return fmt.Errorf("unable to read benchmarked container logs: %w", err)
+			}
+			return fmt.Errorf("Non-zero exit code: %s", string(b))
+		}
+	}
 	return nil
 }

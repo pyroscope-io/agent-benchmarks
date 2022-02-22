@@ -33,7 +33,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"golang.org/x/perf/benchstat"
 )
@@ -48,7 +47,7 @@ func main() {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
+		log.Panicf("Unable to create docker client: %s", err)
 	}
 	var noprof, prof bytes.Buffer
 	r := newRunner(cli)
@@ -69,57 +68,51 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 	agent := agentName(name)
 	log.Printf("Running %s benchmark", agent)
 	if err := r.buildImage(ctx, ingestorPath, id+"/ingestor"); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to create ingestor image: %s", err)
 	}
 
 	if err := r.buildImage(ctx, name, id+"/benchmarked"); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to create benchmarked image: %s", err)
 	}
 
 	if err := r.createNetwork(ctx); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to create network: %s", err)
 	}
 	defer r.removeNetwork(ctx)
 
 	if err := r.createIngestor(ctx); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to create ingestor container: %s", err)
 	}
 	defer r.removeIngestor(ctx)
 
 	if err := r.connectIngestor(ctx); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to connect the ingestor to the network: %s", err)
 	}
 
 	if err := r.startIngestor(ctx); err != nil {
-		log.Fatal(err)
+		log.Panicf("Unable to start ingestor: %s", err)
 	}
+
+	defer r.removeBenchmarked(ctx)
 
 	var r0 []time.Duration
 	for i := 0; i < n; i++ {
 		if err := r.createBenchmarked(ctx, true); err != nil {
-			log.Fatal(err)
+			log.Panicf("Unable to create benchmarked container: %s", err)
 		}
-		defer r.removeBenchmarked(ctx)
 
 		if err := r.connectBenchmarked(ctx); err != nil {
-			log.Fatal(err)
+			log.Panicf("Unable to connect the benchmarked to the network: %s", err)
 		}
 
 		log.Printf(">>> profiled with server benchmark %d/%d", i+1, n)
 		t0 := time.Now()
-		if err := r.startBenchmarked(ctx); err != nil {
-			log.Fatal(err)
-		}
-
-		statusCh, errCh := r.cli.ContainerWait(ctx, r.benchmarkedID, container.WaitConditionNotRunning)
-		select {
-		case err := <-errCh:
-			if err != nil {
-				log.Fatal(err)
-			}
-		case <-statusCh:
+		if err := r.runBenchmarked(ctx); err != nil {
+			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
 		r0 = append(r0, time.Since(t0))
+
+		r.removeBenchmarked(ctx)
 	}
 
 	// Delete the container, drop the network and start again.
@@ -128,51 +121,34 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 
 	var r1 []time.Duration
 	for i := 0; i < n; i++ {
-		r.removeBenchmarked(ctx)
 		if err := r.createBenchmarked(ctx, true); err != nil {
-			log.Fatal(err)
+			log.Panicf("Unable to create benchmarked container: %s", err)
 		}
 
 		log.Printf(">>> profiled without server benchmark %d/%d", i+1, n)
 		t0 := time.Now()
-		if err := r.startBenchmarked(ctx); err != nil {
-			log.Fatal(err)
-		}
-
-		statusCh, errCh := r.cli.ContainerWait(ctx, r.benchmarkedID, container.WaitConditionNotRunning)
-		select {
-		case err := <-errCh:
-			if err != nil {
-				panic(err)
-			}
-		case <-statusCh:
+		if err := r.runBenchmarked(ctx); err != nil {
+			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
 		r1 = append(r1, time.Since(t0))
+
+		r.removeBenchmarked(ctx)
 	}
 
 	var r2 []time.Duration
 	for i := 0; i < n; i++ {
-		// Delete the container, start again without profiling.
-		r.removeBenchmarked(ctx)
 		if err := r.createBenchmarked(ctx, false); err != nil {
-			log.Fatal(err)
+			log.Panicf("Unable to create benchmarked container: %s", err)
 		}
 
 		log.Printf(">>> non-profiled benchmark %d/%d", i+1, n)
 		t0 := time.Now()
-		if err := r.startBenchmarked(ctx); err != nil {
-			log.Fatal(err)
-		}
-
-		statusCh, errCh := r.cli.ContainerWait(ctx, r.benchmarkedID, container.WaitConditionNotRunning)
-		select {
-		case err := <-errCh:
-			if err != nil {
-				log.Fatal(err)
-			}
-		case <-statusCh:
+		if err := r.runBenchmarked(ctx); err != nil {
+			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
 		r2 = append(r2, time.Since(t0))
+
+		r.removeBenchmarked(ctx)
 	}
 
 	for _, r := range r2 {

@@ -22,8 +22,9 @@ func run() {
 func main() {
 	if os.Getenv("PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING") != "" {
 		cfg := pyroscope.Config{
-			ServerAddress: "http://ingestor:4040",
-			ProfileTypes:  []pyroscope.ProfileType{pyroscope.ProfileCPU},
+			ApplicationName: "fibonacci-go-cpu-push",
+			ServerAddress:   "http://ingestor:4040",
+			ProfileTypes:    []pyroscope.ProfileType{pyroscope.ProfileCPU},
 		}
 		p, err := pyroscope.Start(cfg)
 		if err != nil {
