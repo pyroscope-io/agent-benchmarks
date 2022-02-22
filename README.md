@@ -21,6 +21,13 @@ The program to benchmark should handle the PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROF
 - When the envvar is set, the benchmarked program should enable profiling.
 - When the envvar is not set, the benchmarked program should not enable profiling.
 
+### List of benchmarks
+
+- fibonacci. It's a CPU intensive benchmark that requires no heap allocation and no concurrency. It should provide simple stack traces of some height.
+- memory / GC intensive benchmark (TODO)
+- concurrency intensive benchmark (TODO)
+- ...
+
 ## The runner
 
 The runner takes a sequence of paths to the actual benchmarks to run as command line arguments.

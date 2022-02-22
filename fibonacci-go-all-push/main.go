@@ -22,9 +22,8 @@ func run() {
 func main() {
 	if os.Getenv("PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING") != "" {
 		cfg := pyroscope.Config{
-			ApplicationName: "fibonacci-go-mem-push",
+			ApplicationName: "fibonacci-go-all-push",
 			ServerAddress:   "http://ingestor:4040",
-			ProfileTypes:    []pyroscope.ProfileType{pyroscope.ProfileInuseObjects},
 		}
 		p, err := pyroscope.Start(cfg)
 		if err != nil {

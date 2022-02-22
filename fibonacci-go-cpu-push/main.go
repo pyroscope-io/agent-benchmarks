@@ -16,7 +16,7 @@ func fib(n int64) int64 {
 }
 
 func run() {
-	fmt.Println(fib(48))
+	fmt.Println(fib(50))
 }
 
 func main() {
