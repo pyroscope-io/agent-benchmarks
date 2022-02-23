@@ -12,14 +12,14 @@
 
    The runner currently executes three different versions of the benchmarked program:
    - A program with profiling not enabled. This is the baseline.
-   - A program with profiling enabled with an ingestor available.
-   - A program with profiling enabled with an ingestor unavailable.
+   - A program with profiling enabled with an ingester available.
+   - A program with profiling enabled with an ingester unavailable.
    It will measure the time it takes to run all of them and compare the last two with the baseline.
    The benchmarked programs are run several times to have more samples and generate more reliable results.
 
    The runner takes care of the whole setup and teardown of each benchmark, including:
-   - Building the docker images and containres for the ingestor and benchmarked program.
-   - Creating a network and connecting/disconnecting the ingestor and benchmarked program.
+   - Building the docker images and containres for the ingester and benchmarked program.
+   - Creating a network and connecting/disconnecting the ingester and benchmarked program.
    - Removing the containers, images and network when no longer needed.
 */
 package main
@@ -39,7 +39,7 @@ import (
 
 const (
 	id           = "pyroscope-agent-benchmark"
-	ingestorPath = "../ingestor"
+	ingesterPath = "../ingester"
 	n            = 5
 )
 
@@ -67,8 +67,8 @@ func main() {
 func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer) {
 	agent := agentName(name)
 	log.Printf("Running %s benchmark", agent)
-	if err := r.buildImage(ctx, ingestorPath, id+"/ingestor"); err != nil {
-		log.Panicf("Unable to create ingestor image: %s", err)
+	if err := r.buildImage(ctx, ingesterPath, id+"/ingester"); err != nil {
+		log.Panicf("Unable to create ingester image: %s", err)
 	}
 
 	if err := r.buildImage(ctx, name, id+"/benchmarked"); err != nil {
@@ -80,17 +80,17 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 	}
 	defer r.removeNetwork(ctx)
 
-	if err := r.createIngestor(ctx); err != nil {
-		log.Panicf("Unable to create ingestor container: %s", err)
+	if err := r.createIngester(ctx); err != nil {
+		log.Panicf("Unable to create ingester container: %s", err)
 	}
-	defer r.removeIngestor(ctx)
+	defer r.removeIngester(ctx)
 
-	if err := r.connectIngestor(ctx); err != nil {
-		log.Panicf("Unable to connect the ingestor to the network: %s", err)
+	if err := r.connectIngester(ctx); err != nil {
+		log.Panicf("Unable to connect the ingester to the network: %s", err)
 	}
 
-	if err := r.startIngestor(ctx); err != nil {
-		log.Panicf("Unable to start ingestor: %s", err)
+	if err := r.startIngester(ctx); err != nil {
+		log.Panicf("Unable to start ingester: %s", err)
 	}
 
 	defer r.removeBenchmarked(ctx)
@@ -116,7 +116,7 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 	}
 
 	// Delete the container, drop the network and start again.
-	r.removeIngestor(ctx)
+	r.removeIngester(ctx)
 	r.removeNetwork(ctx)
 
 	var r1 []time.Duration

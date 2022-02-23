@@ -23,7 +23,7 @@ func main() {
 	if os.Getenv("PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING") != "" {
 		cfg := pyroscope.Config{
 			ApplicationName: "fibonacci-go-all-push",
-			ServerAddress:   "http://ingestor:4040",
+			ServerAddress:   "http://ingester:4040",
 		}
 		p, err := pyroscope.Start(cfg)
 		if err != nil {

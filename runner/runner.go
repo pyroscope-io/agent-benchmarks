@@ -18,7 +18,7 @@ import (
 type runner struct {
 	cli           *client.Client
 	networkID     string
-	ingestorID    string
+	ingesterID    string
 	benchmarkedID string
 }
 
@@ -71,9 +71,9 @@ func (r *runner) createNetwork(ctx context.Context) error {
 	return nil
 }
 
-func (r *runner) connectIngestor(ctx context.Context) error {
-	cfg := &network.EndpointSettings{Aliases: []string{"ingestor"}}
-	return r.cli.NetworkConnect(ctx, r.networkID, r.ingestorID, cfg)
+func (r *runner) connectIngester(ctx context.Context) error {
+	cfg := &network.EndpointSettings{Aliases: []string{"ingester"}}
+	return r.cli.NetworkConnect(ctx, r.networkID, r.ingesterID, cfg)
 }
 
 func (r *runner) connectBenchmarked(ctx context.Context) error {
@@ -90,22 +90,22 @@ func (r *runner) removeNetwork(ctx context.Context) {
 	}
 }
 
-func (r *runner) createIngestor(ctx context.Context) error {
-	cfg := &container.Config{Image: id + "/ingestor", ExposedPorts: nat.PortSet{"4040": struct{}{}}}
+func (r *runner) createIngester(ctx context.Context) error {
+	cfg := &container.Config{Image: id + "/ingester", ExposedPorts: nat.PortSet{"4040": struct{}{}}}
 	cID, err := r.createContainer(ctx, cfg)
 	if err != nil {
 		return err
 	}
-	r.ingestorID = cID
+	r.ingesterID = cID
 	return nil
 }
 
-func (r *runner) removeIngestor(ctx context.Context) {
-	if r.ingestorID != "" {
-		if err := r.cli.ContainerRemove(ctx, r.ingestorID, types.ContainerRemoveOptions{Force: true}); err != nil {
-			fmt.Println("Unable to remove ingestor container:", err)
+func (r *runner) removeIngester(ctx context.Context) {
+	if r.ingesterID != "" {
+		if err := r.cli.ContainerRemove(ctx, r.ingesterID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			fmt.Println("Unable to remove ingester container:", err)
 		} else {
-			r.ingestorID = ""
+			r.ingesterID = ""
 		}
 	}
 }
@@ -150,8 +150,8 @@ func (r *runner) createContainer(ctx context.Context, cfg *container.Config) (st
 	return res.ID, nil
 }
 
-func (r *runner) startIngestor(ctx context.Context) error {
-	if err := r.cli.ContainerStart(ctx, r.ingestorID, types.ContainerStartOptions{}); err != nil {
+func (r *runner) startIngester(ctx context.Context) error {
+	if err := r.cli.ContainerStart(ctx, r.ingesterID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
