@@ -17,7 +17,7 @@ func slowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	kind := os.Getenv("PYROSCOPE_AGENT_BENCHMARK_INGESTOR_TYPE")
+	kind := os.Getenv("PYROSCOPE_AGENT_BENCHMARK_INGESTER_TYPE")
 	var handler http.HandlerFunc
 	switch kind {
 	case "slow":
