@@ -40,6 +40,7 @@ import (
 const (
 	id           = "pyroscope-agent-benchmark"
 	ingesterPath = "ingester"
+	outputPath   = "results.txt"
 	n            = 5
 )
 
@@ -61,7 +62,12 @@ func main() {
 	}
 	c.AddConfig("no profiling", noprof.Bytes())
 	c.AddConfig("profiling", prof.Bytes())
-	benchstat.FormatText(os.Stdout, c.Tables())
+	f, err := os.Create(outputPath)
+	if err != nil {
+		log.Panicf("Unable to open results file: %s", err)
+	}
+	defer f.Close()
+	benchstat.FormatText(f, c.Tables())
 }
 
 func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer) {
