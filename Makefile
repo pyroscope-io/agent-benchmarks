@@ -3,7 +3,7 @@ all: build-docker run ## Build with docker and run the benchmark suite
 
 .PHONY: build
 build: runner/*.go runner/go.* ## Build the runner
-	pushd runner > /dev/null; go build -v ; popd > /dev/null
+	cd runner ; go build -v
 
 .PHONY: build-docker
 build-docker: ## Build the runner, using a dockerized golang compiler
