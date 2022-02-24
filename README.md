@@ -46,12 +46,18 @@ The runner takes care of the whole setup and teardown of each benchmark, includi
 
 ## Usage
 
-To run all the benchmars just run `run-all.sh`:
+To build and run all the benchmarks just run `make`.
+This will use docker to build the runner and run the whole benchmark suite, so the only dependency is docker.
+
+The runner can also be built with the local go compiler using `make build`, which doesn't need to pull the go docker image.
+
+With an available runnner, the benchmark can be directly run without build ding again with `make run`:
 
 ```
-$ ./run-all.sh
+$ make run
+./run-all.sh
 2022/02/22 15:24:12 Running fibonacci-go-cpu-push benchmark
 [...]
 ```
 
-Take a look to the script to get a better idea of how it works.
+Take a look to the `run-all.sh` script to get a better idea of how it works.
