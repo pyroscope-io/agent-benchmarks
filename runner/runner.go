@@ -174,7 +174,7 @@ func (r *runner) runBenchmarked(ctx context.Context) error {
 			return fmt.Errorf("wait failed: %s", wait.Error.Message)
 		}
 		if wait.StatusCode != 0 {
-			out, err := r.cli.ContainerLogs(ctx, r.benchmarkedID, types.ContainerLogsOptions{ShowStdout: true})
+			out, err := r.cli.ContainerLogs(ctx, r.benchmarkedID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 			if err != nil {
 				return fmt.Errorf("unable to get benchmarked container logs: %w", err)
 			}
@@ -183,7 +183,7 @@ func (r *runner) runBenchmarked(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("unable to read benchmarked container logs: %w", err)
 			}
-			return fmt.Errorf("Non-zero exit code: %s", string(b))
+			return fmt.Errorf("non-zero exit code: %s", string(b))
 		}
 	}
 	return nil
