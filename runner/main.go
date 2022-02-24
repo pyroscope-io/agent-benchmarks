@@ -39,7 +39,7 @@ import (
 
 const (
 	id           = "pyroscope-agent-benchmark"
-	ingesterPath = "../ingester"
+	ingesterPath = "ingester"
 	n            = 5
 )
 
