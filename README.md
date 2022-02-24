@@ -55,9 +55,7 @@ With an available runnner, the benchmark can be directly run without build ding 
 
 ```
 $ make run
-./run-all.sh
+./runner/runner fibonacci-go-cpu-push [...]
 2022/02/22 15:24:12 Running fibonacci-go-cpu-push benchmark
 [...]
 ```
-
-Take a look to the `run-all.sh` script to get a better idea of how it works.

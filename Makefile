@@ -13,7 +13,7 @@ build-docker: ## Build the runner, using a dockerized golang compiler
 
 .PHONY: run
 run: ## Run the benchmark suite
-	./run-all.sh
+	./runner/runner $(shell ls -d fibonacci-*)
 
 help: ## Show this help
 	@egrep '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | sed 's/Makefile://' | awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-z0-9A-Z_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 }'
