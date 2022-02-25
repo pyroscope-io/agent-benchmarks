@@ -15,4 +15,4 @@ if ENV["PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING"] then
   end
 end
 
-fib(42)
+fib(43)
