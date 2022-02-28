@@ -90,8 +90,12 @@ func (r *runner) removeNetwork(ctx context.Context) {
 	}
 }
 
-func (r *runner) createIngester(ctx context.Context) error {
-	cfg := &container.Config{Image: id + "/ingester", ExposedPorts: nat.PortSet{"4040": struct{}{}}}
+func (r *runner) createIngester(ctx context.Context, kind string) error {
+	cfg := &container.Config{
+		Image:        id + "/ingester",
+		ExposedPorts: nat.PortSet{"4040": struct{}{}},
+		Env:          []string{"PYROSCOPE_AGENT_BENCHMARK_INGESTER_TYPE=" + kind},
+	}
 	cID, err := r.createContainer(ctx, cfg)
 	if err != nil {
 		return err
@@ -111,7 +115,7 @@ func (r *runner) removeIngester(ctx context.Context) {
 }
 
 func (r *runner) createBenchmarked(ctx context.Context, profile bool) error {
-	cfg := &container.Config{Image: id + "/benchmarked", ExposedPorts: nat.PortSet{"4040": struct{}{}}}
+	cfg := &container.Config{Image: id + "/benchmarked"}
 	if profile {
 		cfg.Env = append(cfg.Env, "PYROSCOPE_AGENT_BENCHMARK_ENABLE_PROFILING=true")
 	}

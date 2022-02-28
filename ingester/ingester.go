@@ -12,7 +12,7 @@ func fastHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func slowHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(5 * time.Second)
+	time.Sleep(30 * time.Second)
 	w.WriteHeader(http.StatusOK)
 }
 
