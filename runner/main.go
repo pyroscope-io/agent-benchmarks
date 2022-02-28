@@ -12,7 +12,8 @@
 
    The runner currently executes three different versions of the benchmarked program:
    - A program with profiling not enabled. This is the baseline.
-   - A program with profiling enabled with an ingester available.
+   - A program with profiling enabled with a fast ingester available.
+   - A program with profiling enabled with a slow ingester available.
    - A program with profiling enabled with an ingester unavailable.
    It will measure the time it takes to run all of them and compare the last two with the baseline.
    The benchmarked programs are run several times to have more samples and generate more reliable results.
@@ -86,7 +87,8 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 	}
 	defer r.removeNetwork(ctx)
 
-	if err := r.createIngester(ctx); err != nil {
+	// Fast ingester
+	if err := r.createIngester(ctx, "fast"); err != nil {
 		log.Panicf("Unable to create ingester container: %s", err)
 	}
 	defer r.removeIngester(ctx)
@@ -101,7 +103,7 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 
 	defer r.removeBenchmarked(ctx)
 
-	var r0 []time.Duration
+	var fast []time.Duration
 	for i := 0; i < n; i++ {
 		if err := r.createBenchmarked(ctx, true); err != nil {
 			log.Panicf("Unable to create benchmarked container: %s", err)
@@ -111,60 +113,98 @@ func run(ctx context.Context, r *runner, name string, noprof, prof *bytes.Buffer
 			log.Panicf("Unable to connect the benchmarked to the network: %s", err)
 		}
 
-		log.Printf(">>> profiled with server benchmark %d/%d", i+1, n)
+		log.Printf(">>> profiled with fast ingester benchmark %d/%d", i+1, n)
 		t0 := time.Now()
 		if err := r.runBenchmarked(ctx); err != nil {
 			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
-		r0 = append(r0, time.Since(t0))
+		fast = append(fast, time.Since(t0))
 
 		r.removeBenchmarked(ctx)
 	}
 
-	// Delete the container, drop the network and start again.
+	// Slow ingester
 	r.removeIngester(ctx)
-	r.removeNetwork(ctx)
+	if err := r.createIngester(ctx, "slow"); err != nil {
+		log.Panicf("Unable to create ingester container: %s", err)
+	}
 
-	var r1 []time.Duration
+	if err := r.connectIngester(ctx); err != nil {
+		log.Panicf("Unable to connect the ingester to the network: %s", err)
+	}
+
+	if err := r.startIngester(ctx); err != nil {
+		log.Panicf("Unable to start ingester: %s", err)
+	}
+
+	var slow []time.Duration
 	for i := 0; i < n; i++ {
 		if err := r.createBenchmarked(ctx, true); err != nil {
 			log.Panicf("Unable to create benchmarked container: %s", err)
 		}
 
-		log.Printf(">>> profiled without server benchmark %d/%d", i+1, n)
+		if err := r.connectBenchmarked(ctx); err != nil {
+			log.Panicf("Unable to connect the benchmarked to the network: %s", err)
+		}
+
+		log.Printf(">>> profiled with slow ingester benchmark %d/%d", i+1, n)
 		t0 := time.Now()
 		if err := r.runBenchmarked(ctx); err != nil {
 			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
-		r1 = append(r1, time.Since(t0))
+		slow = append(slow, time.Since(t0))
 
 		r.removeBenchmarked(ctx)
 	}
 
-	var r2 []time.Duration
+	// Remove the container and network, not needed anymore.
+	r.removeIngester(ctx)
+	r.removeNetwork(ctx)
+
+	var noserver []time.Duration
+	for i := 0; i < n; i++ {
+		if err := r.createBenchmarked(ctx, true); err != nil {
+			log.Panicf("Unable to create benchmarked container: %s", err)
+		}
+
+		log.Printf(">>> profiled without ingester benchmark %d/%d", i+1, n)
+		t0 := time.Now()
+		if err := r.runBenchmarked(ctx); err != nil {
+			log.Panicf("Failed to run benchmarked container: %s", err)
+		}
+		noserver = append(noserver, time.Since(t0))
+
+		r.removeBenchmarked(ctx)
+	}
+
+	var base []time.Duration
 	for i := 0; i < n; i++ {
 		if err := r.createBenchmarked(ctx, false); err != nil {
 			log.Panicf("Unable to create benchmarked container: %s", err)
 		}
 
-		log.Printf(">>> non-profiled benchmark %d/%d", i+1, n)
+		log.Printf(">>> non-profiled (baseline) benchmark %d/%d", i+1, n)
 		t0 := time.Now()
 		if err := r.runBenchmarked(ctx); err != nil {
 			log.Panicf("Failed to run benchmarked container: %s", err)
 		}
-		r2 = append(r2, time.Since(t0))
+		base = append(base, time.Since(t0))
 
 		r.removeBenchmarked(ctx)
 	}
 
-	for _, r := range r2 {
+	for _, r := range base {
 		noprof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "fast"), r))
+		noprof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "slow"), r))
 		noprof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "noserver"), r))
 	}
-	for _, r := range r0 {
+	for _, r := range fast {
 		prof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "fast"), r))
 	}
-	for _, r := range r1 {
+	for _, r := range slow {
+		prof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "slow"), r))
+	}
+	for _, r := range noserver {
 		prof.WriteString(fmt.Sprintf("%s 1 %d ns/op\n", benchmarkName(agent, "noserver"), r))
 	}
 }
