@@ -60,3 +60,10 @@ $ make run
 2022/02/22 15:24:12 Running fibonacci-go-cpu-push benchmark
 [...]
 ```
+
+## Bechmark results
+
+The benchmark is run on a nightly basis and the results are stored in a S3 bucket and available as static pages.
+
+Latest successful run is always available at http://pyroscope-agent-benchmarks.s3-website-us-east-1.amazonaws.com/latest.txt
+and each daily results are also available in a date based filename, e.g.: http://pyroscope-agent-benchmarks.s3-website-us-east-1.amazonaws.com/2022-02-28.txt
