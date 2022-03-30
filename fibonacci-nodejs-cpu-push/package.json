@@ -1,0 +1,15 @@
+{
+  "name": "fibonacci-nodejs-cpu-push",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@pyroscope/nodejs": "github:pyroscope-io/pyroscope-nodejs",
+    "husky": "^7.0.4"
+  }
+}
