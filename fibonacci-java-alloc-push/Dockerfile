@@ -1,4 +1,4 @@
-FROM openjdk:16-slim-bullseye
+FROM openjdk:17-slim-bullseye
 
 WORKDIR /opt/agent
 
