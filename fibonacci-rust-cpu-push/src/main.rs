@@ -10,7 +10,7 @@ fn fib(n: i64) -> i64 {
 }
 
 fn run() {
-    fib(50);
+    fib(51);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
